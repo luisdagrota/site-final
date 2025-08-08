@@ -24,17 +24,33 @@ export const useProducts = () => {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
           
           if (values.length >= 6) {
+            // Converter estoque para número (remover qualquer texto)
+            const estoqueText = values[2] || '0';
+            const estoque = parseInt(estoqueText.replace(/[^0-9]/g, '')) || 0;
+            
+            // Converter preço para número (remover qualquer texto e usar vírgula como decimal)
+            const precoText = values[3] || '0';
+            const preco = parseFloat(precoText.replace(/[^0-9,\.]/g, '').replace(',', '.')) || 0;
+            
             const product: Product = {
               categoria: values[0] || 'Sem categoria',
               nome: values[1] || 'Produto sem nome',
-              estoque: parseInt(values[2]) || 0,
-              preco: parseFloat(values[3]) || 0,
+              estoque: estoque,
+              preco: preco,
               descricao: values[4] || 'Sem descrição',
               imagem: values[5] || '/placeholder.svg',
               linkCompra: values[6] || undefined
             };
             
-            productsData.push(product);
+            // Debug logs
+            console.log(`Produto: ${product.nome}, Estoque original: "${estoqueText}", Estoque convertido: ${estoque}`);
+            
+            // Só adicionar produtos com estoque maior que 0
+            if (estoque > 0) {
+              productsData.push(product);
+            } else {
+              console.log(`Produto ${product.nome} ignorado por estoque: ${estoque}`);
+            }
           }
         }
         
