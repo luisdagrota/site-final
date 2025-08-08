@@ -23,27 +23,31 @@ export const useProducts = () => {
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
           
-          if (values.length >= 6) {
-            // Converter estoque para número (remover qualquer texto)
-            const estoqueText = values[2] || '0';
+          if (values.length >= 7) {
+            // Mapeamento correto das colunas da planilha:
+            // 0: id, 1: name, 2: description, 3: price, 4: category, 5: stock, 6: image_url
+            
+            const estoqueText = values[5] || '0'; // Coluna "stock"
             const estoque = parseInt(estoqueText.replace(/[^0-9]/g, '')) || 0;
             
-            // Converter preço para número (remover qualquer texto e usar vírgula como decimal)
-            const precoText = values[3] || '0';
+            const precoText = values[3] || '0'; // Coluna "price"
             const preco = parseFloat(precoText.replace(/[^0-9,\.]/g, '').replace(',', '.')) || 0;
             
             const product: Product = {
-              categoria: values[0] || 'Sem categoria',
-              nome: values[1] || 'Produto sem nome',
+              categoria: values[4] || 'Sem categoria', // Coluna "category"
+              nome: values[1] || 'Produto sem nome', // Coluna "name"
               estoque: estoque,
               preco: preco,
-              descricao: values[4] || 'Sem descrição',
-              imagem: values[5] || '/placeholder.svg',
-              linkCompra: values[6] || undefined
+              descricao: values[2] || 'Sem descrição', // Coluna "description"
+              imagem: values[6] || '/placeholder.svg', // Coluna "image_url"
+              linkCompra: undefined // Não usar da planilha
             };
             
             // Debug logs
-            console.log(`Produto: ${product.nome}, Estoque original: "${estoqueText}", Estoque convertido: ${estoque}`);
+            console.log(`Produto: ${product.nome}`);
+            console.log(`- Estoque: ${estoque} (original: "${estoqueText}")`);
+            console.log(`- Preço: ${preco} (original: "${precoText}")`);
+            console.log(`- Imagem: ${product.imagem}`);
             
             // Só adicionar produtos com estoque maior que 0
             if (estoque > 0) {
