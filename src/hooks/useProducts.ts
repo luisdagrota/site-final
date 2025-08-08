@@ -21,42 +21,66 @@ export const useProducts = () => {
         const productsData: Product[] = [];
         
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const line = lines[i].trim();
+          if (!line) continue; // Pular linhas vazias
           
-          if (values.length >= 7) {
-            // Mapeamento correto das colunas da planilha:
-            // 0: id, 1: name, 2: description, 3: price, 4: category, 5: stock, 6: image_url
+          // Parse CSV mais robusto para lidar com vírgulas dentro de aspas
+          const values = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ''));
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, '')); // Adicionar último valor
+          
+          console.log(`Linha ${i}: ${values.length} colunas`, values);
+          
+          if (values.length >= 6) {
+            // Mapeamento das colunas: categoria, nome, descrição, preço, estoque, imagem
+            const categoria = values[0] || 'Sem categoria';
+            const nome = values[1] || 'Produto sem nome';
+            const descricao = values[2] || 'Sem descrição';
+            const precoText = values[3] || '0';
+            const estoqueText = values[4] || '0';
+            const imagem = values[5] || '/placeholder.svg';
             
-            const estoqueText = values[5] || '0'; // Coluna "stock"
             const estoque = parseInt(estoqueText.replace(/[^0-9]/g, '')) || 0;
-            
-            const precoText = values[3] || '0'; // Coluna "price"
             const preco = parseFloat(precoText.replace(/[^0-9,\.]/g, '').replace(',', '.')) || 0;
             
             const product: Product = {
-              categoria: values[4] || 'Sem categoria', // Coluna "category"
-              nome: values[1] || 'Produto sem nome', // Coluna "name"
-              estoque: estoque,
-              preco: preco,
-              descricao: values[2] || 'Sem descrição', // Coluna "description"
-              imagem: values[6] || '/placeholder.svg', // Coluna "image_url"
-              linkCompra: undefined // Não usar da planilha
+              categoria,
+              nome,
+              estoque,
+              preco,
+              descricao,
+              imagem,
+              linkCompra: undefined
             };
             
-            // Debug logs
-            console.log(`Produto: ${product.nome}`);
-            console.log(`- Estoque: ${estoque} (original: "${estoqueText}")`);
-            console.log(`- Preço: ${preco} (original: "${precoText}")`);
-            console.log(`- Imagem: ${product.imagem}`);
+            console.log(`Produto ${i}: ${product.nome}, Estoque: ${estoque}, Preço: ${preco}`);
             
             // Só adicionar produtos com estoque maior que 0
             if (estoque > 0) {
               productsData.push(product);
+              console.log(`✅ Produto adicionado: ${product.nome}`);
             } else {
-              console.log(`Produto ${product.nome} ignorado por estoque: ${estoque}`);
+              console.log(`❌ Produto ignorado (estoque ${estoque}): ${product.nome}`);
             }
+          } else {
+            console.log(`⚠️ Linha ${i} ignorada (${values.length} colunas):`, values);
           }
         }
+        
+        console.log(`📊 Total de produtos carregados: ${productsData.length}`);
         
         // Agrupar produtos por categoria
         const productsByCategory: ProductsByCategory = {};
