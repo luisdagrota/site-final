@@ -10,14 +10,11 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const handleBuyClick = () => {
-    if (product.linkCompra) {
-      window.open(product.linkCompra, '_blank');
-    } else {
-      const whatsappNumber = '5561992385559';
-      const message = `Quero o produto ${product.nome}`;
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-    }
+    // SEMPRE redirecionar para WhatsApp, nunca usar o linkCompra da planilha
+    const whatsappNumber = '5561992385559';
+    const message = `Quero o produto ${product.nome}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const formatPrice = (price: number) => {
@@ -35,6 +32,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           alt={product.nome}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
+            console.log(`Erro ao carregar imagem: ${product.imagem}`);
             e.currentTarget.src = '/placeholder.svg';
           }}
         />
