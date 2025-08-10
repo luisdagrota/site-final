@@ -15,8 +15,29 @@ export const useProducts = () => {
         const response = await fetch(SHEET_CSV_URL);
         const csvText = await response.text();
         
+        console.log('🔍 CSV Raw Text (primeiro 500 chars):', csvText.substring(0, 500));
+        
         const lines = csvText.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        console.log(`📝 Total de linhas no CSV: ${lines.length}`);
+        
+        if (lines.length === 0) {
+          console.error('❌ CSV vazio!');
+          throw new Error('CSV vazio');
+        }
+        
+        // Primeira linha para headers
+        console.log('🔍 Linha de headers (linha 0):', lines[0]);
+        
+        // Detectar delimitador automaticamente
+        const firstLine = lines[0];
+        const commaCount = (firstLine.match(/,/g) || []).length;
+        const semicolonCount = (firstLine.match(/;/g) || []).length;
+        const delimiter = semicolonCount > commaCount ? ';' : ',';
+        
+        console.log(`🔍 Delimitador detectado: "${delimiter}" (vírgulas: ${commaCount}, ponto-e-vírgulas: ${semicolonCount})`);
+        
+        const headers = lines[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
+        console.log('📋 Headers encontrados:', headers);
         
         const productsData: Product[] = [];
         
@@ -24,7 +45,9 @@ export const useProducts = () => {
           const line = lines[i].trim();
           if (!line) continue; // Pular linhas vazias
           
-          // Parse CSV mais robusto para lidar com vírgulas dentro de aspas
+          console.log(`🔍 Linha bruta ${i}:`, line);
+          
+          // Parse CSV mais robusto para lidar com delimitadores dentro de aspas
           const values = [];
           let current = '';
           let inQuotes = false;
@@ -33,7 +56,7 @@ export const useProducts = () => {
             const char = line[j];
             if (char === '"') {
               inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
+            } else if (char === delimiter && !inQuotes) {
               values.push(current.trim().replace(/^"|"$/g, ''));
               current = '';
             } else {
@@ -42,7 +65,7 @@ export const useProducts = () => {
           }
           values.push(current.trim().replace(/^"|"$/g, '')); // Adicionar último valor
           
-          console.log(`Linha ${i}: ${values.length} colunas`, values);
+          console.log(`📊 Linha ${i}: ${values.length} colunas parseadas:`, values);
           
           if (values.length >= 6) {
             // Mapeamento das colunas: categoria, nome, descrição, preço, estoque, imagem
