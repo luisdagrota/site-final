@@ -37,8 +37,23 @@ export const useProducts = () => {
           
           console.log(`🔍 Processando linha ${i}:`, line);
           
-          // Parse CSV simples por vírgula
-          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          // Parse CSV robusto para lidar com vírgulas dentro de aspas
+          const values = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim().replace(/^"|"$/g, ''));
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim().replace(/^"|"$/g, '')); // Adicionar último valor
           
           console.log(`📊 Valores parseados (${values.length} colunas):`, values);
           
