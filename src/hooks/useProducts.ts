@@ -15,69 +15,48 @@ export const useProducts = () => {
         const response = await fetch(SHEET_CSV_URL);
         const csvText = await response.text();
         
-        console.log('🔍 CSV Raw Text (primeiro 500 chars):', csvText.substring(0, 500));
+        console.log('🔍 CSV completo:', csvText);
         
         const lines = csvText.split('\n').filter(line => line.trim());
-        console.log(`📝 Total de linhas no CSV: ${lines.length}`);
+        console.log(`📝 Total de linhas: ${lines.length}`);
         
-        if (lines.length === 0) {
-          console.error('❌ CSV vazio!');
+        if (lines.length <= 1) {
+          console.error('❌ CSV vazio ou só tem header!');
           throw new Error('CSV vazio');
         }
         
-        // Primeira linha para headers
-        console.log('🔍 Linha de headers (linha 0):', lines[0]);
-        
-        // Detectar delimitador automaticamente
-        const firstLine = lines[0];
-        const commaCount = (firstLine.match(/,/g) || []).length;
-        const semicolonCount = (firstLine.match(/;/g) || []).length;
-        const delimiter = semicolonCount > commaCount ? ';' : ',';
-        
-        console.log(`🔍 Delimitador detectado: "${delimiter}" (vírgulas: ${commaCount}, ponto-e-vírgulas: ${semicolonCount})`);
-        
-        const headers = lines[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
-        console.log('📋 Headers encontrados:', headers);
+        // Header: id,name,description,price,category,stock,image_url
+        console.log('🔍 Header:', lines[0]);
         
         const productsData: Product[] = [];
         
+        // Processar cada linha (pulando header linha 0)
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
-          if (!line) continue; // Pular linhas vazias
+          if (!line) continue;
           
-          console.log(`🔍 Linha bruta ${i}:`, line);
+          console.log(`🔍 Processando linha ${i}:`, line);
           
-          // Parse CSV mais robusto para lidar com delimitadores dentro de aspas
-          const values = [];
-          let current = '';
-          let inQuotes = false;
+          // Parse CSV simples por vírgula
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
           
-          for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === delimiter && !inQuotes) {
-              values.push(current.trim().replace(/^"|"$/g, ''));
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          values.push(current.trim().replace(/^"|"$/g, '')); // Adicionar último valor
+          console.log(`📊 Valores parseados (${values.length} colunas):`, values);
           
-          console.log(`📊 Linha ${i}: ${values.length} colunas parseadas:`, values);
-          
-          if (values.length >= 6) {
-            // Mapeamento das colunas: categoria, nome, descrição, preço, estoque, imagem
-            const categoria = values[0] || 'Sem categoria';
+          if (values.length >= 7) {
+            // Estrutura real: id,name,description,price,category,stock,image_url
+            const id = values[0] || '';
             const nome = values[1] || 'Produto sem nome';
             const descricao = values[2] || 'Sem descrição';
             const precoText = values[3] || '0';
-            const estoqueText = values[4] || '0';
-            const imagem = values[5] || '/placeholder.svg';
+            const categoria = values[4] || 'Sem categoria';
+            const estoqueText = values[5] || '0';
+            const imagem = values[6] || '/placeholder.svg';
             
-            const estoque = parseInt(estoqueText.replace(/[^0-9]/g, '')) || 0;
-            const preco = parseFloat(precoText.replace(/[^0-9,\.]/g, '').replace(',', '.')) || 0;
+            // Converter estoque e preço
+            const estoque = parseInt(estoqueText.toString().replace(/[^0-9]/g, '')) || 0;
+            const preco = parseFloat(precoText.toString().replace(/[^0-9,\.]/g, '').replace(',', '.')) || 0;
+            
+            console.log(`✅ Produto encontrado: ${nome}, Estoque: ${estoque}, Preço: ${preco}`);
             
             const product: Product = {
               categoria,
@@ -89,17 +68,11 @@ export const useProducts = () => {
               linkCompra: undefined
             };
             
-            console.log(`Produto ${i}: ${product.nome}, Estoque: ${estoque}, Preço: ${preco}`);
-            
-            // Só adicionar produtos com estoque maior que 0
-            if (estoque > 0) {
-              productsData.push(product);
-              console.log(`✅ Produto adicionado: ${product.nome}`);
-            } else {
-              console.log(`❌ Produto ignorado (estoque ${estoque}): ${product.nome}`);
-            }
+            // Adicionar todos os produtos (mesmo sem estoque para debug)
+            productsData.push(product);
+            console.log(`➕ Produto adicionado: ${product.nome}`);
           } else {
-            console.log(`⚠️ Linha ${i} ignorada (${values.length} colunas):`, values);
+            console.log(`⚠️ Linha ${i} ignorada (${values.length} colunas insuficientes)`);
           }
         }
         
@@ -122,14 +95,14 @@ export const useProducts = () => {
         
         // Dados de exemplo em caso de erro
         setProducts({
-          'Contas': [
+          'Games': [
             {
-              categoria: 'Contas',
-              nome: 'EA Sports',
-              estoque: 5,
-              preco: 29.90,
-              descricao: 'Conta EA Sports com jogos',
-              imagem: '/placeholder.svg'
+              categoria: 'Games',
+              nome: 'EA Sports FC 25',
+              estoque: 12,
+              preco: 35.99,
+              descricao: 'Conta Steam com EA Sports FC 25',
+              imagem: 'https://images.kinguin.net/yt/carousel-main/vi/pBM2xyco_Kg/maxresdefault.jpg'
             }
           ]
         });
